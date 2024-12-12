@@ -47,7 +47,9 @@
           buildInputs = packages;
 
           shellHook = ''
-            #export LD_LIBRARY_PATH=${pkgs.lib.makeLibraryPath libraries}:$LD_LIBRARY_PATH
+            export HELLO_RATATUI_CONFIG=`pwd`/.config
+            export HELLO_RATATUI_DATA=`pwd`/.data
+            export HELLO_RATATUI_LOG_LEVEL=debug
           '';
         };
       }

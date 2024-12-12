@@ -1,33 +1,40 @@
-use std::io;
+#![feature(variant_count)]
 
-use ratatui::{
-    DefaultTerminal,
-    crossterm::event::{self, KeyCode, KeyEventKind},
-    style::Stylize,
-    widgets::Paragraph,
+pub mod action;
+pub mod app;
+pub mod cli;
+pub mod components;
+pub mod config;
+pub mod tui;
+pub mod utils;
+
+use clap::Parser;
+use cli::Cli;
+use color_eyre::eyre::Result;
+
+use crate::{
+    app::App,
+    utils::{initialize_logging, initialize_panic_handler},
 };
 
-fn main() -> io::Result<()> {
-    let mut terminal = ratatui::init();
-    terminal.clear()?;
-    let app_result = run(terminal);
-    ratatui::restore();
-    app_result
+async fn tokio_main() -> Result<()> {
+    initialize_logging()?;
+
+    initialize_panic_handler()?;
+
+    let args = Cli::parse();
+    let mut app = App::new(args.tick_rate, args.frame_rate)?;
+    app.run().await?;
+
+    Ok(())
 }
 
-fn run(mut terminal: DefaultTerminal) -> io::Result<()> {
-    loop {
-        terminal.draw(|frame| {
-            let greeting = Paragraph::new("Hello Ratatui! (press 'q' to quit)")
-                .white()
-                .on_blue();
-            frame.render_widget(greeting, frame.area());
-        })?;
-
-        if let event::Event::Key(key) = event::read()? {
-            if key.kind == KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                return Ok(());
-            }
-        }
+#[tokio::main]
+async fn main() -> Result<()> {
+    if let Err(e) = tokio_main().await {
+        eprintln!("{} error: Something went wrong", env!("CARGO_PKG_NAME"));
+        Err(e)
+    } else {
+        Ok(())
     }
 }
